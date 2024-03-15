@@ -1,0 +1,119 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper,margin={2cm}]{geometry}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{hyperref}
+
+\usepackage{algorithm}
+\usepackage[
+    indLines=false,
+    rightComments=false,
+    beginComment=//~,
+    beginLComment=//~,
+]{algpseudocodex}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Dt}{\Delta{}t}
+\renewcommand{\Vec}{\bm}
+\newcommand{\Norm}[1]{\left|#1\right|}
+
+\newcommand{\AddEq}{\mathrel{+\!\!=}}
+\newcommand{\SubEq}{\mathrel{-\!\!=}}
+
+\newcommand{\MaxSpeed}{\textsf{MaxSpeed}}
+\newcommand{\MaxAccel}{\textsf{MaxAccel}}
+
+\begin{document}
+
+Given position, velocity and acceleration, $\Vec{p}, \Vec{v}, \Vec{a} \in \R^{2}$, where
+$\Vec{a} \neq \bm{0}$ Dishonored's movement system works as follows:
+\begin{algorithm}
+    \caption{\textsc{Movement}$(\Dt, s, f)$}
+    \begin{algorithmic}[1]
+        \State $\MaxSpeed = 400 \cdot s$
+        \State $\MaxAccel = 2000 \cdot s$
+
+        \State $\Vec{d} = \Vec{a}/\Norm{\Vec{a}}$
+
+        \If{$\Norm{\Vec{a}} > \MaxAccel$}
+            \State $\Vec{a} = \MaxAccel \cdot \Vec{d}$ \Comment{Limit acceleration to \MaxAccel}
+        \EndIf
+
+        \State $\Vec{v} \SubEq \Dt \cdot f \cdot (\Vec{v} - \Norm{\Vec{v}} \cdot \Vec{d})$
+        \label{friction}\Comment{Friction}
+        \State $\Vec{v} \AddEq \Dt \cdot \Vec{a}$ \label{acceleration}\Comment{Acceleration}
+
+        \If{$\Norm{\Vec{v}} > \MaxSpeed$}
+            \State $\Vec{v} = \MaxSpeed \cdot \Vec{v} / \Norm{\Vec{v}}$
+            \Comment{Limit velocity to \MaxSpeed}
+        \EndIf
+
+        \State $\Vec{p} \AddEq \Dt \cdot \Vec{v}$ \Comment{Movement}
+    \end{algorithmic}
+\end{algorithm}
+
+Here $\Dt, s, f \in \R$ represent respectively the delta time (in seconds), the speed scale, and
+friction constant. The friction constant $f = 8$, and the speed scale $s$ depends on
+the type of movement. Some relevant values are $s = 1$ when walking, $s = 1.5$ when sprinting, and
+$s = 1.95$ when agility sprinting. We can generally assume $\Norm{\Vec{a}} = 2000 \leq \MaxAccel$.
+
+Note that when $\Dt = \frac{1}{f} = \frac{1}{8}$, they cancel each other out during the friction
+step (Line \ref{friction}), where we simply get
+$\Vec{v} \SubEq \Vec{v} - \Norm{\Vec{v}} \cdot \Vec{d}$, which is equivalent to
+$\Vec{v} = \Norm{\Vec{v}} \cdot \Vec{d}$, i.e., all previous speed gets redirected in the direction
+we are currently moving. This property is unique to 8 FPS.
+
+It is possible to achieve something similar at other frame rates if we take into account the acceleration
+step (Line \ref{acceleration}), by solving the equation
+\begin{equation*}
+    m \cdot \Vec{u} = \Vec{v} -  \Dt \cdot f \cdot (\Vec{v} - \Norm{\Vec{v}} \cdot \Vec{d})
+                              + \Dt \cdot 2000 \cdot \Vec{d},
+\end{equation*}
+for $m$ and $\Vec{d}$ where $\Norm{\Vec{d}} = 1$ in order to move in direction $\Vec{u}$.
+
+If we make the simplifying assumption that $\Vec{v} = \MaxSpeed \cdot \Vec{w}$ for some unit vector
+$\Vec{w}$, we can further simplify the equation to
+
+\begin{equation*}
+    \begin{split}
+        m \cdot \Vec{u} &= \MaxSpeed \cdot \Vec{w}
+                                    -  \Dt \cdot f \cdot \MaxSpeed \cdot (\Vec{w} - \Vec{d})
+                                    + \Dt \cdot 2000 \cdot \Vec{d} \\
+                        &= 400 \cdot s \cdot \Vec{w}
+                                    - \Dt \cdot f \cdot 400 \cdot s \cdot (\Vec{w} - \Vec{d})
+                                    + \Dt \cdot 2000 \cdot \Vec{d} \\
+    \iff
+        \frac{m}{400 \cdot s} \cdot \Vec{u} &= \Vec{w} - \Dt \cdot f \cdot (\Vec{w} - \Vec{d})
+                                                       + \frac{5}{s} \cdot \Dt \cdot \Vec{d}. \\
+    \end{split}
+\end{equation*}
+We let $m' = \frac{m}{400 \cdot s}$ and $a = \frac{5}{s}$, and end up with the final equation
+\begin{equation*}
+    m' \cdot \Vec{u} = \Vec{w} - \Dt \cdot f \cdot (\Vec{w} - \Vec{d}) + a \cdot \Dt \cdot \Vec{d}.
+\end{equation*}
+It is easy to rearrange in order to find
+\begin{equation*}
+    \Vec{d} = \frac{m' \cdot \Vec{u} + (\Dt \cdot f - 1) \cdot \Vec{w}}{\Dt \cdot (a + f)}.
+\end{equation*}
+Solving for $m'$ is harder but yields
+\begin{equation*}
+    m' = \sqrt{(\Dt \cdot (a + f))^{2} - ((\Dt \cdot f - 1) \cdot \Vec{u} \cdot \Vec{w'})^{2}}
+       - (\Dt \cdot f - 1) \cdot \Vec{u} \cdot \Vec{w},
+\end{equation*}
+where $\Vec{w'} = (-w_{2}, w_{1})$.
+
+If we want to simply turn an absolute amount, we can fix $\Vec{w} = (1, 0)$, which simplifies
+the above equations to
+\begin{equation*}
+    \Vec{d} = \frac{m' \cdot \Vec{u} + (\Dt \cdot f - 1, 0)}{\Dt \cdot (a + f)},
+\end{equation*}
+and
+\begin{equation*}
+    m' = \sqrt{(\Dt \cdot (a + f))^{2} - ((\Dt \cdot f - 1) \cdot u_{2})^{2}}
+       - (\Dt \cdot f - 1) \cdot u_{1}.
+\end{equation*}
+
+\end{document}

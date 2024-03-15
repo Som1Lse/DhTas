@@ -1,0 +1,18 @@
+.vscode/
+
+build/
+
+datafiles/documents*/My Games/Dishonored/DishonoredGame/Config/*.ini
+!datafiles/documents*/My Games/Dishonored/DishonoredGame/Config/DishonoredEngine.ini
+!datafiles/documents*/My Games/Dishonored/DishonoredGame/Config/DishonoredInput.ini
+
+datafiles/documents*/My Games/Dishonored/DishonoredGame/Logs
+
+datafiles/scripts/__pycache__/
+
+docs/*.aux
+docs/*.fdb_latexmk
+docs/*.fls
+docs/*.log
+docs/*.out
+docs/*.synctex.gz

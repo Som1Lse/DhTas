@@ -1,0 +1,12 @@
+﻿#define _UNICODE
+#define UNICODE
+
+#define WINVER _WIN32_WINNT_WIN8
+#define _WIN32_WINNT _WIN32_WINNT_WIN8
+
+#undef _NDEBUG
+
+#define _CRT_SECURE_NO_WARNINGS
+#define NOMINMAX
+
+#define DIRECTINPUT_VERSION 0x800
